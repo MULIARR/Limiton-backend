@@ -1,0 +1,16 @@
+pytonlib==0.0.63
+dedust
+pytoniq
+aiogram
+environs
+pytonlib
+tonsdk
+pydantic
+fastapi
+requests
+uvicorn
+strenum
+pytonapi
+cryptography
+sqlalchemy
+asyncpg
