@@ -12,5 +12,5 @@ uvicorn
 strenum
 pytonapi
 cryptography
-sqlalchemy
 asyncpg
+sqlalchemy

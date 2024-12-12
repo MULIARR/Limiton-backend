@@ -6,11 +6,11 @@ from clients import ton
 from models.rates import SwapRates
 
 jettons_router = APIRouter(
-    prefix="/jettons"
+    prefix="/jetton"
 )
 
 
-@jettons_router.get("/{address}/all")
+@jettons_router.get("/all/{address}")
 async def jettons(address: str):
     """
     Endpoint to get a list of tokens of the selected account
@@ -21,19 +21,6 @@ async def jettons(address: str):
     jettons = (await ton.jettons.get_jettons(address)).jettons
 
     return jettons
-
-
-@jettons_router.get("/jetton/{address}")
-async def jettons(address: str):
-    """
-    Endpoint to get information on a specific token
-
-    :param address:
-    :return:
-    """
-    jetton = await ton.jettons.get_jetton(address)
-
-    return jetton
 
 
 @jettons_router.get("/get_rates", response_model=SwapRates)
@@ -52,9 +39,25 @@ async def get_rates(
     :param receive_asset_amount:
     :return:
     """
+    print(f"{send_asset_address=} {send_asset_amount=} {receive_asset_address=} {receive_asset_amount=}")
+
     swap_assets = [{"address": send_asset_address, "amount": send_asset_amount}]
 
     if receive_asset_address and receive_asset_amount is not None:
         swap_assets.append({"address": receive_asset_address, "amount": receive_asset_amount})
 
     return await ton.jettons.get_rates_for_swap(swap_assets)
+
+
+@jettons_router.get("/{address}")
+async def jettons(address: str):
+    """
+    Endpoint to get information on a specific token
+
+    :param address:
+    :return:
+    """
+    jetton = await ton.jettons.get_jetton(address)
+
+    return jetton
+

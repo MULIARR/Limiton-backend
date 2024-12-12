@@ -18,7 +18,14 @@ class DbConfig:
 
         postgresql+asyncpg://{user}:{password}@{host}/{database}
         """
-        database_url = env.str("DB_URL")
+
+        host = env.str("DB_HOST")
+        password = env.str("DB_PASSWORD")
+        user = env.str("DB_USER")
+        database = env.str("DB_NAME")
+        port = env.int("DB_PORT", 5432)
+
+        database_url = f'postgresql+asyncpg://{user}:{password}@{host}:{port}/{database}'
 
         return DbConfig(
             database_url=database_url
@@ -32,8 +39,6 @@ class TgBotConfig:
     """
 
     token: str
-    admin_ids: list[int]
-    use_redis: bool
 
     @staticmethod
     def from_env(env: Env):
@@ -41,13 +46,9 @@ class TgBotConfig:
         Creates the TgBot object from environment variables.
         """
         token = env.str("BOT_TOKEN")
-        admin_ids = list(map(int, env.list("ADMINS")))
-        use_redis = env.bool("USE_REDIS")
 
         return TgBotConfig(
-            token=token,
-            admin_ids=admin_ids,
-            use_redis=use_redis
+            token=token
         )
 
 

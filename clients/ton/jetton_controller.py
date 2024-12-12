@@ -91,7 +91,10 @@ class JettonController:
 
         if receive_rate_in_usd:
             profit_in_usd = receive_rate_in_usd - send_rate_in_usd
-            profit_percentage = (profit_in_usd / send_rate_in_usd) * 100
+            try:
+                profit_percentage = (profit_in_usd / send_rate_in_usd) * 100
+            except ZeroDivisionError:
+                profit_percentage = 0
             profit = format_percentage(profit_percentage)
         else:
             profit = "0.00%"

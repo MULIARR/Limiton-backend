@@ -1,12 +1,12 @@
 import asyncio
+from asyncio import CancelledError
 
 from aiogram import Bot
 from dedust import Asset
 
 from clients.logger_config import app_logger
-from constants import TONTokenAddresses
+from constants import TONTokenAddresses, OrderStatus
 from database.db import db
-from database.enums import OrderStatus
 from database.schema.order import Order
 from database.schema.ton_wallet import TonWallet
 from models.order import LimitOrderModel
@@ -49,7 +49,7 @@ class LimitOrderController:
         """
         wallet = self.user_wallets.get(user_id)
         if not wallet:
-            wallet = await db.ton_wallets.get_selected_wallet(user_id)
+            wallet = await db.ton_wallets.get_wallet_by_user_id(user_id)
             if wallet:
                 self.user_wallets[user_id] = wallet
         return wallet
@@ -117,73 +117,79 @@ class LimitOrderController:
             jetton_vault=None,
             jetton_wallet=None
     ):
-        app_logger.info(f'[LIMIT ORDER] Inited -> {order.send_amount} {order.send_token_metadata.symbol} to '
-                        f'{order.receive_amount} {order.receive_token_metadata.symbol} '
-                        f'(MIN: {order.minimum_to_receive_amount})')
+        try:
+            app_logger.info(f'[INITED] {order.send_amount} {order.send_token_metadata.symbol} to '
+                            f'{order.receive_amount} {order.receive_token_metadata.symbol} '
+                            f'(MIN: {order.minimum_to_receive_amount})')
 
-        user_wallet = await self.dedust.get_wallet_from_mnemonics(user_mnemonics)
+            user_wallet = await self.dedust.get_wallet_from_mnemonics(user_mnemonics)
 
-        [send_asset, _], pool = await self.dedust.get_pool_and_assets(
-            order.send_token_address, order.receive_token_address
-        )
-
-        # other preparation of Toncoin sending
-        is_ton_sending = send_asset.equals(Asset.native())
-
-        if not is_ton_sending:
-            jetton_vault, jetton_wallet = await self.dedust.get_send_jetton_objects(
-                order.send_token_address, user_wallet
+            [send_asset, _], pool = await self.dedust.get_pool_and_assets(
+                order.send_token_address, order.receive_token_address
             )
 
-        # prepare swap
-        swap = self.dedust.prepare_swap(
-            is_ton_sending=is_ton_sending,
-            send_amount=order.send_amount,
-            minimum_to_receive=order.minimum_to_receive_amount,
-            pool=pool,
-            jetton_vault=jetton_vault,
-            jetton_wallet=jetton_wallet,
-            recipient_address=user_wallet.address
-        )
+            # other preparation of Toncoin sending
+            is_ton_sending = send_asset.equals(Asset.native())
 
-        app_logger.info(f'[LAUCNHED] #{order.order_id}')  # noqa
-
-        while True:
-            estimated_swap = await self.dedust.estimate_swap(
-                send_asset=send_asset,
-                send_amount=order.send_amount,
-                send_asset_decimals=order.send_token_metadata.decimals,
-                receive_asset_decimals=order.receive_token_metadata.decimals,
-                pool=pool
-            )
-
-            # print(f"Current: {estimated_swap} Order: {order.receive_amount}")
-            if estimated_swap and estimated_swap >= order.receive_amount:
-                result = await self.dedust.execute_swap(
-                    swap=swap,
-                    send_amount=order.send_amount,
-                    jetton_wallet=jetton_wallet,
-                    user_wallet=user_wallet,
-                    is_ton_sending=is_ton_sending
+            if not is_ton_sending:
+                jetton_vault, jetton_wallet = await self.dedust.get_send_jetton_objects(
+                    order.send_token_address, user_wallet
                 )
 
-                if result:
-                    app_logger.info(f'[SUCCESS] Swapped #{order.order_id} {order.send_amount} {order.send_token_metadata.symbol} to {order.receive_amount} {order.receive_token_metadata.symbol}')  # noqa
+            # prepare swap
+            swap = self.dedust.prepare_swap(
+                is_ton_sending=is_ton_sending,
+                send_amount=order.send_amount,
+                minimum_to_receive=order.minimum_to_receive_amount,
+                pool=pool,
+                jetton_vault=jetton_vault,
+                jetton_wallet=jetton_wallet,
+                recipient_address=user_wallet.address
+            )
 
-                break
+            app_logger.info(f'[LAUCNHED] #{order.order_id}')  # noqa
 
-            await asyncio.sleep(1)
+            # update order status db
+            await db.limit_orders.update_order_status(order.order_id, OrderStatus.ACTIVE.value)
 
-        app_logger.info('Limit Order Completed')
+            while True:
+                estimated_swap = await self.dedust.estimate_swap(
+                    send_asset=send_asset,
+                    send_amount=order.send_amount,
+                    send_asset_decimals=order.send_token_metadata.decimals,
+                    receive_asset_decimals=order.receive_token_metadata.decimals,
+                    pool=pool
+                )
 
-        # notify user
-        await self.bot.send_message(
-            chat_id=order.user_id,
-            text=f"🚀 <b>Order Executed</b>\n\n{order.send_amount} {order.send_token_metadata.symbol} » {estimated_swap} {order.receive_token_metadata.symbol}"  # noqa
-        )
+                # print(f"Current: {estimated_swap} Order: {order.receive_amount}")
+                if estimated_swap and estimated_swap >= order.receive_amount:
+                    result = await self.dedust.execute_swap(
+                        swap=swap,
+                        send_amount=order.send_amount,
+                        jetton_wallet=jetton_wallet,
+                        user_wallet=user_wallet,
+                        is_ton_sending=is_ton_sending
+                    )
 
-        # update order status db
-        await db.limit_orders.update_order_status(order.order_id, OrderStatus.COMPLETED.value)
+                    if result:
+                        app_logger.info(f'[SUCCESS] Swapped #{order.order_id} {order.send_amount} {order.send_token_metadata.symbol} to {order.receive_amount} {order.receive_token_metadata.symbol}')  # noqa
 
-        # stop task
-        is_cancelled = self.order_task.cancel_task(order.order_id)
+                    break
+
+                await asyncio.sleep(1)
+
+            app_logger.info('Limit Order Completed')
+
+            # notify user
+            await self.bot.send_message(
+                chat_id=order.user_id,
+                text=f"🚀 <b>Order Executed</b>\n\n{order.send_amount} {order.send_token_metadata.symbol} » {estimated_swap} {order.receive_token_metadata.symbol}"  # noqa
+            )
+
+            # update order status db
+            await db.limit_orders.update_order_status(order.order_id, OrderStatus.COMPLETED.value)
+
+            # stop task
+            task = self.order_task.cancel_task(order.order_id)
+        except CancelledError:
+            app_logger.info(f'[CANCELLED] #{order.order_id}')

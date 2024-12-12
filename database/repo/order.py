@@ -4,7 +4,7 @@ import random
 
 from sqlalchemy import select
 
-from database.enums import OrderStatus
+from constants import OrderStatus
 from database.schema.order import Order
 
 
@@ -17,12 +17,17 @@ class OrderRepository:
             user_id: int,
             send_amount: float,
             send_token_address: str,
+            send_token_symbol: str,
+            send_token_decimals: int,
+            send_token_image: str,
             receive_amount: float,
             receive_token_address: str,
+            receive_token_symbol: str,
+            receive_token_decimals: int,
+            receive_token_image: str,
             minimum_to_receive_amount: float,
             slippage: int,
-            status: str = OrderStatus.ACTIVE.value,
-            completion_date: datetime = None
+            profit_in_usd: float
     ) -> Order:
         async with self.session_local() as session:
             order_id = await self.generate_unique_order_id()
@@ -32,12 +37,17 @@ class OrderRepository:
                 user_id=user_id,
                 send_amount=send_amount,
                 send_token_address=send_token_address,
+                send_token_symbol=send_token_symbol,
+                send_token_decimals=send_token_decimals,
+                send_token_image=send_token_image,
                 receive_amount=receive_amount,
                 receive_token_address=receive_token_address,
+                receive_token_symbol=receive_token_symbol,
+                receive_token_decimals=receive_token_decimals,
+                receive_token_image=receive_token_image,
                 minimum_to_receive_amount=minimum_to_receive_amount,
                 slippage=slippage,
-                status=status,
-                completion_date=completion_date
+                profit_in_usd=profit_in_usd
             )
             session.add(order)
             await session.commit()
@@ -75,14 +85,14 @@ class OrderRepository:
                 order.status = new_status
                 await session.commit()
 
-    async def delete_order(self, order_id: str) -> bool:
+    async def delete_order(self, order_id: str) -> Order:
         async with self.session_local() as session:
             result = await session.execute(select(Order).filter(Order.order_id == order_id))
             order = result.scalars().first()
             if order:
                 await session.delete(order)
                 await session.commit()
-                return True
+                return order
 
             return False
 

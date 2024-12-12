@@ -24,7 +24,7 @@ class TonWalletModel(BaseModel):
 
 
 class WalletManager:
-    def __init__(self, tonapi):
+    def __init__(self):
         url_config = 'https://ton.org/global-config.json'
         config = requests.get(url_config).json()
 
@@ -32,7 +32,6 @@ class WalletManager:
         Path(keystore_dir).mkdir(parents=True, exist_ok=True)
 
         self.client = TonlibClient(ls_index=0, config=config, keystore=keystore_dir)
-        self.tonapi = tonapi
 
     async def init_client(self):
         await self.client.init()

@@ -34,8 +34,8 @@ class OrderTaskController:
             return False
 
         task = self.tasks.pop(order_id).task
-        result = task.cancel()
-        return result
+        task.cancel()
+        return task
 
     def get_task(self, order_id: str) -> TaskModel:
         if order_id not in self.tasks:

@@ -5,7 +5,6 @@ from bot.handlers.orders.view.menu import open_user_orders_menu
 from bot.keyboards import factories
 from clients import ton
 from database.db import Database
-from database.enums import OrderStatus
 
 cancellation_router = Router()
 

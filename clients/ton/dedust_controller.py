@@ -168,6 +168,8 @@ class DeDustController:
                     provider=self.provider
                 )
                 return pool_answer["amount_out"] / pow(10, receive_asset_decimals)
+            except RunGetMethodError:
+                return 0
             except LiteServerError as e:
                 print(e)
                 await asyncio.sleep(2)

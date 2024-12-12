@@ -1,11 +1,14 @@
+from asyncio import CancelledError
+
 from fastapi import APIRouter, HTTPException
 
 from clients import ton
+from clients.logger_config import app_logger
 from database.db import db
-from models.order import LimitOrderModel
+from models.db.order import OrderCreate
 
 orders_router = APIRouter(
-    prefix="/orders"
+    prefix="/order"
 )
 
 
@@ -33,7 +36,7 @@ async def get_order(order_id: str):
 
 
 @orders_router.post("/create")
-async def get_order(order: LimitOrderModel):
+async def get_order(order: OrderCreate):
     """
     Endpoint to create new limit order and launch it
 
@@ -41,21 +44,8 @@ async def get_order(order: LimitOrderModel):
     :return:
     """
 
-    order_data = order.model_dump(
-        include={
-            'user_id',
-            'type',
-            'send_amount',
-            'send_token_address',
-            'receive_amount',
-            'receive_token_address',
-            'minimum_to_receive_amount',
-            'slippage'
-        }
-    )
-
     # db entry
-    order = await db.limit_orders.add_order(**order_data)
+    order = await db.limit_orders.add_order(**order.model_dump())
 
     # create limit order
     limit_order = await ton.limit_orders.create_limit_order_model(order)
@@ -70,21 +60,33 @@ async def get_order(order: LimitOrderModel):
 async def delete_order(order_id: str):
     """
     Endpoint to delete/stop limit order
-
-    :param order_id:
-    :return:
     """
 
-    # delete order from db
     order = await db.limit_orders.delete_order(order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found or already cancelled")
 
-    if order is None:
-        raise HTTPException(status_code=404, detail="Order not found")
+    task = ton.order_tasks.cancel_task(order_id)
 
-    # stop task
-    is_cancelled = ton.order_tasks.cancel_task(order_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
 
-    if is_cancelled:
-        return f"Order with id {order_id} has been deleted"
+    try:
+        await task
+    except CancelledError:
+        print(f"Task {order_id} was cancelled successfully")
+    except Exception as e:
+        print(f"Task {order_id} failed with exception: {e}")
+        raise HTTPException(status_code=500, detail=f"Task failed: {e}")
+
+    if task.done():
+        if task.cancelled():
+            return f"Order with id {order_id} has been deleted"
+        elif task.exception():
+            raise HTTPException(status_code=500, detail=f"Task failed with exception: {task.exception()}")
+        else:
+            return f"Order with id {order_id} completed successfully"
     else:
-        raise HTTPException(status_code=404, detail="Order not cancelled")
+        raise HTTPException(status_code=500, detail="Task is still running")
+
+

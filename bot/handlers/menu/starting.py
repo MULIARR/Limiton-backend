@@ -22,12 +22,11 @@ async def _(message: Message, bot: Bot, state: FSMContext, db: Database):
 
     if not await db.users.user_exists(user_id):
 
+        user_db_model = await db.users.add_user(user_id, message.from_user.language_code)
+
         # generate address
         mnemonics = ton.wallets.create_wallet()
-
         await db.ton_wallets.add_wallet(user_id, mnemonics)
-
-        user_db_model = await db.users.add_user(user_id, message.from_user.language_code)
 
         # admin log
         user_tg = await bot.get_chat(user_id)
@@ -54,6 +53,10 @@ async def _(message: Message, bot: Bot, state: FSMContext, db: Database):
         ),
         reply_markup=keyboards.menu.create_menu_markup()
     )
+
+
+def get_starting_text() -> str:
+    ...
 
 
 @starting_router.callback_query(F.data == "back_to_menu")

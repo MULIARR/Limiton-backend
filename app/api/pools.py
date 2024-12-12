@@ -5,7 +5,7 @@ from fastapi import APIRouter
 from clients import ton
 
 pools_router = APIRouter(
-    prefix="/pools"
+    prefix="/pool"
 )
 
 
@@ -50,7 +50,11 @@ async def estimate_swap_out(
         send_jetton_address, receive_jetton_address
     )
 
-    return await ton.dedust.estimate_swap(
+    estimated_swap_out = await ton.dedust.estimate_swap(
         send_asset, send_jetton_amount, send_asset_decimals, receive_asset_decimals, pool
     )
+
+    return estimated_swap_out
+
+
 

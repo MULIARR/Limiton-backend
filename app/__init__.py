@@ -8,7 +8,7 @@ from config import config
 
 app = FastAPI(lifespan=lifespan)
 
-origins = ["http://localhost:5173", "http://127.0.0.1:5173", config.app.client_url]
+origins = ["http://localhost:5173", "http://127.0.0.1:5173", "https://web.telegram.org", config.app.client_url]
 
 app.add_middleware(
     CORSMiddleware,

@@ -1,7 +1,13 @@
 from strenum import StrEnum
 
 
+class OrderStatus(StrEnum):
+    """Limit order statuses"""
 
+    PENDING = "pending"
+    ACTIVE = "active"
+    CANCELLED = "cancelled"
+    COMPLETED = "completed"
 
 
 class TONTokenAddresses(StrEnum):
