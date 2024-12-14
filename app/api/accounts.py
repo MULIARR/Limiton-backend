@@ -16,8 +16,8 @@ async def get_portfolio(address: str, request: Request):
     :param request:
     :return:
     """
-    init_data = get_init_data_from_request(request)
-    print(init_data)
+    # init_data = get_init_data_from_request(request)
+    # print(init_data)
 
     return await ton.accounts.get_portfolio(address)
 

@@ -11,14 +11,16 @@ class TonWalletRepository:
     async def add_wallet(
             self,
             user_id: int,
-            mnemonics: list[str]
+            mnemonics: list[str],
+            address: str
     ) -> TonWallet:
         encrypted_mnemonic = encryption_manager.encrypt('_'.join(mnemonics))
 
         async with self.session_local() as session:
             wallet = TonWallet(
                 user_id=user_id,
-                mnemonics=encrypted_mnemonic
+                mnemonics=encrypted_mnemonic,
+                address=address
             )
 
             session.add(wallet)

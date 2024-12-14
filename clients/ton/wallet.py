@@ -51,7 +51,7 @@ class WalletManager:
         # but at this point it's not necessary
         user_friendly_address = wallet.address.to_string(True, True)
 
-        return mnemonics
+        return mnemonics, user_friendly_address
 
         # return TonWalletModel(
         #     address=user_friendly_address,

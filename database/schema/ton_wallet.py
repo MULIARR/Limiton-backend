@@ -10,6 +10,7 @@ class TonWallet(Base):
 
     wallet_id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     user_id: Mapped[int] = mapped_column(ForeignKey('users.user_id'), unique=True, nullable=False)
+    address: Mapped[str] = mapped_column(nullable=False)
     mnemonics: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
     # name: Mapped[str] = mapped_column(String(255), nullable=False)
 

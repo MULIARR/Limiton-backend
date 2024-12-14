@@ -1,6 +1,8 @@
 from sqlalchemy import select, exists
 from datetime import datetime
 
+from sqlalchemy.orm import joinedload
+
 from database.schema import User
 
 
@@ -34,9 +36,11 @@ class UserRepository:
     async def get_user(self, user_id: int) -> User:
         async with self.session_local() as session:
             result = await session.execute(
-                select(User).filter_by(user_id=user_id)
+                select(User)
+                .options(joinedload(User.wallet))
+                .filter(User.user_id == user_id)
             )
-            return result.scalar()
+            return result.scalar_one_or_none()
 
     async def update_user_language(self, user_id: int, new_language: str) -> None:
         async with self.session_local() as session:

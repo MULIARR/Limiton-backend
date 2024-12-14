@@ -49,7 +49,7 @@ async def _(
 
             await st.limit_order.update(state, **kwargs)
         else:
-            await st.limit_order.update(state, receive_token={"amount": amount})
+            await st.limit_order.update(state, receive_token={"amount": amount, })
 
         # get out of the state
         await state.set_state(state=None)

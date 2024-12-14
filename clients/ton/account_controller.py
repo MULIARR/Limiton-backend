@@ -1,8 +1,10 @@
 from pytonapi.schema.accounts import Account
 from pytonapi.schema.jettons import JettonsBalances, JettonBalance
+from pytonapi.async_tonapi.methods.utilites import UtilitiesMethod
 
 from constants import TONTokenAddresses, CryptoLogo
 from models.portfolio import PortfolioModel, AssetModel
+from config import config
 
 
 class AccountController:
@@ -13,7 +15,7 @@ class AccountController:
         jettons_list = await self.get_jettons(address)
 
         account_data = await self.get_account(address)
-        ton_balance = int(account_data.balance.to_amount())
+        ton_balance = account_data.balance.to_amount()
 
         # adding TON to the assets
         jettons_list.append(
@@ -33,11 +35,14 @@ class AccountController:
 
         account_status = account_data.status
 
-        if account_status != 'active':
+        if True: # account_status != 'active':
             # NOTE: non-bounceable address is needed for contracts where it is important that the
             # transaction be completed regardless of whether the recipient can accept it.
 
-            account = self.tonapi.accounts.parse_address(address)
+            # TODO: [extra high priority] kill all stupid coders from tonapi, useless trash
+            utility = UtilitiesMethod(api_key=config.tonapi.key)
+
+            account = await utility.parse_address(address)
             address = account.non_bounceable.b64
 
         return PortfolioModel(

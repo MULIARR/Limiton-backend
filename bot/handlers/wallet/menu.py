@@ -30,11 +30,12 @@ async def _(
     )
 
     try:
-        wallet = await db.ton_wallets.get_selected_wallet(user_id)
+        wallet = await db.ton_wallets.get_wallet_by_user_id(user_id)
         wallet = ton.wallets.get_wallet(wallet.mnemonics)
 
         address = wallet.address
         portfolio = await ton.accounts.get_portfolio(address)
+        print(portfolio)
     except Exception as e:
         print(e)
         await query.answer("Try Again Later", show_alert=True)

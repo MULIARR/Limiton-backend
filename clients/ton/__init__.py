@@ -24,7 +24,7 @@ class TONController:
 
         self.order_task_controller = OrderTaskController()
         self.dedust_controller = DeDustController()
-        self.wallet_manager = WalletManager(self.tonapi_client)
+        self.wallet_manager = WalletManager()
 
         self.limit_order_controller = LimitOrderController(
             self.tonapi_client,

@@ -19,8 +19,9 @@ class Database:
 
     async def async_init(self):
         async with self.engine.begin() as conn:
-            await conn.run_sync(Base.metadata.drop_all)
-            await conn.run_sync(Base.metadata.create_all)
+            ...
+            # await conn.run_sync(Base.metadata.drop_all)
+            # await conn.run_sync(Base.metadata.create_all)
 
     async def close(self):
         self.session_local.close_all()

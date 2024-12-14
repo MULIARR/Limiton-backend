@@ -19,7 +19,7 @@ async def _(
 
     await state.clear()
 
-    wallet = await db.ton_wallets.get_selected_wallet(user_id)
+    wallet = await db.ton_wallets.get_wallet_by_user_id(user_id)
 
     await bot.send_message(
         chat_id=user_id,
